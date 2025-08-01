@@ -7,7 +7,9 @@
     "conversation": "node src/conversation.js"
   },
   "dependencies": {
-    "openai": "^4.0.0",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
     "canvas": "^2.11.2"
   }
 }
