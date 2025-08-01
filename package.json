@@ -1,0 +1,12 @@
+{
+  "name": "bot-conversation",
+  "version": "1.0.0",
+  "description": "Two bots having endless conversation",
+  "main": "src/conversation.js",
+  "scripts": {
+    "conversation": "node src/conversation.js"
+  },
+  "dependencies": {
+    "openai": "^4.0.0"
+  }
+}

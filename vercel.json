@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/bot-a-message.js": {
+      "includeFiles": "bot_a_message.txt"
+    },
+    "api/bot-b-message.js": {
+      "includeFiles": "bot_b_message.txt"
+    }
+  }
+}
