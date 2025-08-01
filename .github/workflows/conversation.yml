@@ -1,0 +1,36 @@
+name: Bot Conversation
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # 5分毎に実行
+  workflow_dispatch:  # 手動実行も可能
+
+jobs:
+  conversation:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Run conversation
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: node src/conversation.js
+    
+    - name: Commit and push changes
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add bot_a_message.txt bot_b_message.txt
+        git diff --staged --quiet || git commit -m "Update bot messages"
+        git push
