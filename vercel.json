@@ -5,6 +5,9 @@
     },
     "api/bot-b-message.js": {
       "includeFiles": "bot_b_message.txt"
+    },
+    "api/conversation-image.js": {
+      "includeFiles": ["bot_a_message.txt", "bot_b_message.txt"]
     }
   }
 }
