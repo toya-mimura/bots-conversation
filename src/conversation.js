@@ -117,7 +117,7 @@ async function main() {
     
     // 画像生成
     const width = 800;
-    const height = 200;
+    const height = 600;
     const padding = 40;
     
     // Bot A画像
@@ -166,3 +166,4 @@ async function main() {
 }
 
 main();
+
