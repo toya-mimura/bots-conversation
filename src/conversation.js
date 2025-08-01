@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const OpenAI = require('openai');
+const { createCanvas } = require('canvas');
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -48,6 +49,28 @@ function determineNextSpeaker(botAMessages, botBMessages) {
   return totalMessages % 2 === 0 ? 'A' : 'B';
 }
 
+// テキスト折り返し関数
+function wrapText(context, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  let line = '';
+  let currentY = y;
+  
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + ' ';
+    const metrics = context.measureText(testLine);
+    const testWidth = metrics.width;
+    
+    if (testWidth > maxWidth && n > 0) {
+      context.fillText(line, x, currentY);
+      line = words[n] + ' ';
+      currentY += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  context.fillText(line, x, currentY);
+}
+
 async function main() {
   try {
     // ファイルを読み込む
@@ -91,6 +114,48 @@ async function main() {
       botBMessages.push(newMessage);
       await fs.writeFile('bot_b_message.txt', formatMessages(botBMessages));
     }
+    
+    // 画像生成
+    const width = 800;
+    const height = 200;
+    const padding = 40;
+    
+    // Bot A画像
+    const canvasA = createCanvas(width, height);
+    const ctxA = canvasA.getContext('2d');
+    
+    // 透過背景（何も描かない）
+    ctxA.font = '24px Arial';
+    ctxA.fillStyle = 'black';
+    ctxA.fillText('Bot A says:', padding, 50);
+    ctxA.font = '20px Arial';
+    
+    if (nextSpeaker === 'A') {
+      wrapText(ctxA, newMessage, padding, 90, width - padding * 2, 30);
+    } else if (botAMessages.length > 0) {
+      wrapText(ctxA, botAMessages[botAMessages.length - 1], padding, 90, width - padding * 2, 30);
+    }
+    
+    const bufferA = canvasA.toBuffer('image/png');
+    await fs.writeFile('bot_a_latestmessage.png', bufferA);
+    
+    // Bot B画像
+    const canvasB = createCanvas(width, height);
+    const ctxB = canvasB.getContext('2d');
+    
+    ctxB.font = '24px Arial';
+    ctxB.fillStyle = 'black';
+    ctxB.fillText('Bot B says:', padding, 50);
+    ctxB.font = '20px Arial';
+    
+    if (nextSpeaker === 'B') {
+      wrapText(ctxB, newMessage, padding, 90, width - padding * 2, 30);
+    } else if (botBMessages.length > 0) {
+      wrapText(ctxB, botBMessages[botBMessages.length - 1], padding, 90, width - padding * 2, 30);
+    }
+    
+    const bufferB = canvasB.toBuffer('image/png');
+    await fs.writeFile('bot_b_latestmessage.png', bufferB);
     
     console.log(`Bot ${nextSpeaker}: ${newMessage}`);
     
