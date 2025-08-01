@@ -185,9 +185,7 @@ async function main() {
     const canvasA = createCanvas(width, height);
     const ctxA = canvasA.getContext('2d');
     
-    // 背景を白に設定（透明だと文字が見えにくい場合がある）
-    ctxA.fillStyle = 'white';
-    ctxA.fillRect(0, 0, width, height);
+    // 背景は透過のまま（何も描かない）
     
     // テキストの設定
     ctxA.fillStyle = 'black';
@@ -208,9 +206,7 @@ async function main() {
     const canvasB = createCanvas(width, height);
     const ctxB = canvasB.getContext('2d');
     
-    // 背景を白に設定
-    ctxB.fillStyle = 'white';
-    ctxB.fillRect(0, 0, width, height);
+    // 背景は透過のまま（何も描かない）
     
     ctxB.fillStyle = 'black';
     ctxB.font = `24px ${fontFamily}`;
