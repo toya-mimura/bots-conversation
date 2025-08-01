@@ -19,6 +19,14 @@ jobs:
       with:
         node-version: '18'
     
+    # 日本語フォントをインストール
+    - name: Install Japanese fonts
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
+        # フォントキャッシュを更新
+        sudo fc-cache -fv
+    
     - name: Install dependencies
       run: npm install
     
