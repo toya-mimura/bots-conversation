@@ -1,10 +1,42 @@
 const fs = require('fs').promises;
 const OpenAI = require('openai');
-const { createCanvas } = require('canvas');
+const { createCanvas, registerFont } = require('canvas');
+const path = require('path');
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// 日本語フォントを登録する関数
+async function setupJapaneseFont() {
+  try {
+    // システムに日本語フォントがある場合の候補
+    const fontPaths = [
+      '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+      '/System/Library/Fonts/Hiragino Sans GB.ttc',
+      '/usr/share/fonts/opentype/noto/NotoCJK-Regular.ttc',
+      path.join(__dirname, '../fonts/NotoSansCJK-Regular.ttc')
+    ];
+    
+    for (const fontPath of fontPaths) {
+      try {
+        await fs.access(fontPath);
+        registerFont(fontPath, { family: 'Japanese' });
+        console.log(`Font registered: ${fontPath}`);
+        return 'Japanese';
+      } catch (error) {
+        continue;
+      }
+    }
+    
+    // フォントが見つからない場合はデフォルトを使用
+    console.log('No Japanese font found, using default font');
+    return 'Arial, sans-serif';
+  } catch (error) {
+    console.log('Font setup failed, using default font');
+    return 'Arial, sans-serif';
+  }
+}
 
 // ファイルを読み込む関数
 async function readFile(filename) {
@@ -49,30 +81,59 @@ function determineNextSpeaker(botAMessages, botBMessages) {
   return totalMessages % 2 === 0 ? 'A' : 'B';
 }
 
-// テキスト折り返し関数
-function wrapText(context, text, x, y, maxWidth, lineHeight) {
-  const words = text.split(' ');
-  let line = '';
-  let currentY = y;
+// テキスト折り返し関数（日本語対応改良版）
+function wrapText(context, text, x, y, maxWidth, lineHeight, fontFamily) {
+  // 日本語テキストの場合、文字単位で折り返しを行う
+  const isJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
   
-  for (let n = 0; n < words.length; n++) {
-    const testLine = line + words[n] + ' ';
-    const metrics = context.measureText(testLine);
-    const testWidth = metrics.width;
+  if (isJapanese) {
+    let line = '';
+    let currentY = y;
     
-    if (testWidth > maxWidth && n > 0) {
-      context.fillText(line, x, currentY);
-      line = words[n] + ' ';
-      currentY += lineHeight;
-    } else {
-      line = testLine;
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const testLine = line + char;
+      const metrics = context.measureText(testLine);
+      
+      if (metrics.width > maxWidth && line.length > 0) {
+        context.fillText(line, x, currentY);
+        line = char;
+        currentY += lineHeight;
+      } else {
+        line = testLine;
+      }
     }
+    
+    if (line) {
+      context.fillText(line, x, currentY);
+    }
+  } else {
+    // 英語の場合は単語単位で折り返し
+    const words = text.split(' ');
+    let line = '';
+    let currentY = y;
+    
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' ';
+      const metrics = context.measureText(testLine);
+      
+      if (metrics.width > maxWidth && n > 0) {
+        context.fillText(line, x, currentY);
+        line = words[n] + ' ';
+        currentY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    context.fillText(line, x, currentY);
   }
-  context.fillText(line, x, currentY);
 }
 
 async function main() {
   try {
+    // 日本語フォントをセットアップ
+    const fontFamily = await setupJapaneseFont();
+    
     // ファイルを読み込む
     const [systemPromptA, systemPromptB, botAContent, botBContent] = await Promise.all([
       readFile('systemprompt_a.txt'),
@@ -124,16 +185,20 @@ async function main() {
     const canvasA = createCanvas(width, height);
     const ctxA = canvasA.getContext('2d');
     
-    // 透過背景（何も描かない）
-    ctxA.font = '24px Arial';
+    // 背景を白に設定（透明だと文字が見えにくい場合がある）
+    ctxA.fillStyle = 'white';
+    ctxA.fillRect(0, 0, width, height);
+    
+    // テキストの設定
     ctxA.fillStyle = 'black';
-    ctxA.fillText('Bot A says:', padding, 50);
-    ctxA.font = '20px Arial';
+    ctxA.font = `24px ${fontFamily}`;
+    ctxA.fillText('Bot A (Cy) says:', padding, 50);
+    ctxA.font = `20px ${fontFamily}`;
     
     if (nextSpeaker === 'A') {
-      wrapText(ctxA, newMessage, padding, 90, width - padding * 2, 30);
+      wrapText(ctxA, newMessage, padding, 90, width - padding * 2, 30, fontFamily);
     } else if (botAMessages.length > 0) {
-      wrapText(ctxA, botAMessages[botAMessages.length - 1], padding, 90, width - padding * 2, 30);
+      wrapText(ctxA, botAMessages[botAMessages.length - 1], padding, 90, width - padding * 2, 30, fontFamily);
     }
     
     const bufferA = canvasA.toBuffer('image/png');
@@ -143,15 +208,19 @@ async function main() {
     const canvasB = createCanvas(width, height);
     const ctxB = canvasB.getContext('2d');
     
-    ctxB.font = '24px Arial';
+    // 背景を白に設定
+    ctxB.fillStyle = 'white';
+    ctxB.fillRect(0, 0, width, height);
+    
     ctxB.fillStyle = 'black';
-    ctxB.fillText('Bot B says:', padding, 50);
-    ctxB.font = '20px Arial';
+    ctxB.font = `24px ${fontFamily}`;
+    ctxB.fillText('Bot B (Ver) says:', padding, 50);
+    ctxB.font = `20px ${fontFamily}`;
     
     if (nextSpeaker === 'B') {
-      wrapText(ctxB, newMessage, padding, 90, width - padding * 2, 30);
+      wrapText(ctxB, newMessage, padding, 90, width - padding * 2, 30, fontFamily);
     } else if (botBMessages.length > 0) {
-      wrapText(ctxB, botBMessages[botBMessages.length - 1], padding, 90, width - padding * 2, 30);
+      wrapText(ctxB, botBMessages[botBMessages.length - 1], padding, 90, width - padding * 2, 30, fontFamily);
     }
     
     const bufferB = canvasB.toBuffer('image/png');
@@ -166,4 +235,3 @@ async function main() {
 }
 
 main();
-
