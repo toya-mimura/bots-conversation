@@ -75,10 +75,30 @@ function buildConversationHistory(botAMessages, botBMessages, currentBot) {
   return messages;
 }
 
-// 次の話者を決定する関数
+// 次の話者を決定する関数（修正版）
 function determineNextSpeaker(botAMessages, botBMessages) {
-  const totalMessages = botAMessages.length + botBMessages.length;
-  return totalMessages % 2 === 0 ? 'A' : 'B';
+  // 両方のメッセージ配列が空の場合、Bot Aから開始
+  if (botAMessages.length === 0 && botBMessages.length === 0) {
+    return 'A';
+  }
+  
+  // どちらか一方が空の場合
+  if (botAMessages.length === 0) {
+    return 'A';
+  }
+  if (botBMessages.length === 0) {
+    return 'B';
+  }
+  
+  // 両方にメッセージがある場合、より少ない方が次に発言
+  if (botAMessages.length < botBMessages.length) {
+    return 'A';
+  } else if (botBMessages.length < botAMessages.length) {
+    return 'B';
+  } else {
+    // 同じ数の場合、Bot Bが次（Bot Aが最後に発言したと仮定）
+    return 'B';
+  }
 }
 
 // テキスト折り返し関数（PNG画像表示用のみ）
@@ -146,8 +166,13 @@ async function main() {
     const botAMessages = parseMessages(botAContent);
     const botBMessages = parseMessages(botBContent);
     
+    // デバッグ情報を出力
+    console.log(`Bot A messages count: ${botAMessages.length}`);
+    console.log(`Bot B messages count: ${botBMessages.length}`);
+    
     // 次の話者を決定
     const nextSpeaker = determineNextSpeaker(botAMessages, botBMessages);
+    console.log(`Next speaker: Bot ${nextSpeaker}`);
     
     // システムプロンプトと会話履歴を構築
     const systemPrompt = nextSpeaker === 'A' ? systemPromptA : systemPromptB;
@@ -214,9 +239,9 @@ async function main() {
     ctxB.font = `20px ${fontFamily}`;
     
     if (nextSpeaker === 'B') {
-      wrapText(ctxB, newMessage, padding, 90, width - padding * 2, 30, fontFamily);
+      wrapText(ctxB, newMessage, padding, 90, width - padding * 2, 30);
     } else if (botBMessages.length > 0) {
-      wrapText(ctxB, botBMessages[botBMessages.length - 1], padding, 90, width - padding * 2, 30, fontFamily);
+      wrapText(ctxB, botBMessages[botBMessages.length - 1], padding, 90, width - padding * 2, 30);
     }
     
     const bufferB = canvasB.toBuffer('image/png');
