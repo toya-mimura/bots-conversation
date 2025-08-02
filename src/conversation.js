@@ -81,8 +81,8 @@ function determineNextSpeaker(botAMessages, botBMessages) {
   return totalMessages % 2 === 0 ? 'A' : 'B';
 }
 
-// テキスト折り返し関数（日本語対応改良版）
-function wrapText(context, text, x, y, maxWidth, lineHeight, fontFamily) {
+// テキスト折り返し関数（PNG画像表示用のみ）
+function wrapText(context, text, x, y, maxWidth, lineHeight) {
   // 日本語テキストの場合、文字単位で折り返しを行う
   const isJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
   
@@ -194,9 +194,9 @@ async function main() {
     ctxA.font = `20px ${fontFamily}`;
     
     if (nextSpeaker === 'A') {
-      wrapText(ctxA, newMessage, padding, 90, width - padding * 2, 30, fontFamily);
+      wrapText(ctxA, newMessage, padding, 90, width - padding * 2, 30);
     } else if (botAMessages.length > 0) {
-      wrapText(ctxA, botAMessages[botAMessages.length - 1], padding, 90, width - padding * 2, 30, fontFamily);
+      wrapText(ctxA, botAMessages[botAMessages.length - 1], padding, 90, width - padding * 2, 30);
     }
     
     const bufferA = canvasA.toBuffer('image/png');
